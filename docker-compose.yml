@@ -1,0 +1,78 @@
+version: '3.9'
+
+
+
+services:
+
+
+
+ postgres-integration:
+    container_name: postgres-integration
+    image: postgres
+    volumes:
+      - db_volume:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: always
+    environment:
+      - POSTGRES_DB=energyconsumption
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=1234
+
+ rabbitmq-integration:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-integration
+    environment:
+      - RABBITMQ_ERLANG_COOKIE=SWQOKODSQALRPCLNMEQG
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_Pass=guest
+      - RABBITMQ_DEFAULT_VHOST=/
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+ dotnet-integration:
+    container_name: dotnet-integration
+    image: working_myproject-dotnet-integration
+    build:
+        context: ./
+        dockerfile: ./EnergyConsumptionBackendApp/EnergyConsumptionBackendApp/Dockerfile
+    restart: always
+    command: >
+        bash -c "cd EnergyConsumptionBackendApp/EnergyConsumptionBackendApp/ &&
+        dotnet run"
+    volumes:
+      - .:/code
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    depends_on:
+      - postgres-integration
+      - rabbitmq-integration
+    environment:
+      - POSTGRES_IP=postgres-integration
+      - POSTGRES_DB=energyconsumption
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=1234
+      - POSTGRES_HOST=postgres-integration
+      - POSTGRES_PORT=5432
+      - ASPNETCORE_HTTP_PORT=https://+:5001
+      - ASPNETCORE_URLS=http://+:5000
+      
+ react-integration:
+    build:
+      context: ./
+      dockerfile: ./energy_consumption_frontend_app/Dockerfile
+    container_name: react-integration
+    restart: always
+    ports:
+      - 3000:80
+volumes:
+    db_volume:
+      external: true
+    dotnet-integration:
+        driver:
+            local
+    react-integration:
+        driver:
+            local

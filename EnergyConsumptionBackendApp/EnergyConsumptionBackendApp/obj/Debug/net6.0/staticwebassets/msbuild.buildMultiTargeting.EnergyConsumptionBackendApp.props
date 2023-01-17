@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="..\build\EnergyConsumptionBackendApp.props" />
+</Project>
